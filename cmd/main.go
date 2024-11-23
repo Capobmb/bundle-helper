@@ -26,6 +26,11 @@ func (li Line) SetContent(content string) Line {
 	return li
 }
 
+const (
+	COMMENTLINEPREFIX = "//"
+	COMMANDPREFIX     = "@bundle-helper"
+)
+
 func (li LineConverter) ConvertLine(line Line, parseState *ParseState) (Line, error) {
 	const COMMENT_PREFIX = "//"
 	makeCommentLine := func(line string) string {
@@ -49,11 +54,11 @@ func (li LineConverter) ConvertLine(line Line, parseState *ParseState) (Line, er
 }
 
 type ParseState struct {
-	Current AtomicParseState
-	Next    AtomicParseState
+	Current LineOperation
+	Next    LineOperation
 }
 
-type AtomicParseState int
+type LineOperation int
 
 const (
 	undefined = iota
@@ -100,7 +105,6 @@ type Converter struct {
 
 func (c Converter) ReadOrder(line Line, cmdProcessor *CommandProcessor) error {
 	trimmedLine := strings.Trim(line.content, " ")
-	const COMMENTLINEPREFIX = "//"
 	if !strings.HasPrefix(trimmedLine, COMMENTLINEPREFIX) {
 		// not an comment, returning
 		slog.Debug("not a comment line", "line", line)
@@ -119,7 +123,6 @@ func (c Converter) ReadOrder(line Line, cmdProcessor *CommandProcessor) error {
 	// debug print splittedLine
 	slog.Debug("splittedLine", "splittedLine", splittedLine, "size", len(splittedLine))
 
-	const COMMANDPREFIX = "@bundle-helper"
 	if len(splittedLine) < 1 || splittedLine[0] != COMMANDPREFIX {
 		// not a command, returning
 		return nil
@@ -141,11 +144,7 @@ func (c Converter) ReadOrder(line Line, cmdProcessor *CommandProcessor) error {
 	}
 	slog.Debug("command type", "commandType", commandType)
 
-	handler, found := cmdProcessor.handlers[commandType]
-	if !found {
-		return fmt.Errorf("unknown command type `%s` in line `%s`", commandType, line)
-	}
-
+	handler := cmdProcessor.handlers[commandType]
 	// handle
 	err := handler(c.parseState)
 	if err != nil {
