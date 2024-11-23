@@ -21,9 +21,8 @@ func (li Line) String() string {
 	return fmt.Sprintf("line %d: %s", li.lineNumber, li.content)
 }
 
-func (li Line) SetContent(content string) Line {
+func (li *Line) SetContent(content string) {
 	li.content = content
-	return li
 }
 
 const (
@@ -32,9 +31,8 @@ const (
 )
 
 func (li LineConverter) ConvertLine(line Line, parseState *ParseState) (Line, error) {
-	const COMMENT_PREFIX = "//"
 	makeCommentLine := func(line string) string {
-		return COMMENT_PREFIX + line
+		return COMMENTLINEPREFIX + line
 	}
 	switch parseState.Current {
 	case undefined:
@@ -42,13 +40,13 @@ func (li LineConverter) ConvertLine(line Line, parseState *ParseState) (Line, er
 	case identity:
 		return line, nil
 	case isSingleLineCommenting:
-		return line.SetContent(makeCommentLine(line.content)), nil
+		line.SetContent(makeCommentLine(line.content))
 	case isSingleLineUncommenting:
-		return line.SetContent(strings.TrimPrefix(line.content, COMMENT_PREFIX)), nil
+		line.SetContent(strings.TrimPrefix(line.content, COMMENTLINEPREFIX))
 	case isBlockCommenting:
-		return line.SetContent(makeCommentLine(line.content)), nil
+		line.SetContent(makeCommentLine(line.content))
 	case isBlockUncommenting:
-		return line.SetContent(strings.TrimPrefix(line.content, COMMENT_PREFIX)), nil
+		line.SetContent(strings.TrimPrefix(line.content, COMMENTLINEPREFIX))
 	}
 	return line, nil
 }
