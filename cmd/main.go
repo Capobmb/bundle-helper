@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"os"
@@ -164,14 +165,8 @@ func (lc LineConverter) NotifyConvertLineFinish(parseState *ParseState) error {
 	return nil
 }
 
-func (c Converter) Convert(fileName string) ([]Line, error) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		return nil, fmt.Errorf("can not open file: %w", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+func (c Converter) Convert(reader io.Reader) ([]Line, error) {
+	scanner := bufio.NewScanner(reader)
 	var resultLines []Line
 
 	for i := 0; scanner.Scan(); i++ {
@@ -271,7 +266,12 @@ func main() {
 	converter := Converter{&lineConverter, &parseState, commandProcessor}
 
 	fileName := os.Args[1]
-	lines, err := converter.Convert(fileName)
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	reader := bufio.NewReader(file)
+	lines, err := converter.Convert(reader)
 	if err != nil {
 		log.Fatal(err)
 	}
